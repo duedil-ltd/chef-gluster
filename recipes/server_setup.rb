@@ -19,35 +19,58 @@
 # limitations under the License.
 #
 
-# Prepare Physical volumes
-node['gluster']['server']['disks'].each do |physical_device|
-  lvm_physical_volume physical_device
+use_lvm = true
+if node['gluster']['server']['disks'].nil?
+  use_lvm = false
 end
+
+# Prepare Physical volumes
+if use_lvm
+  include_recipe 'lvm'
+  node['gluster']['server']['disks'].each do |physical_device|
+    lvm_physical_volume physical_device
+  end
+end
+
+
 
 # Create and start volumes
 node['gluster']['server']['volumes'].each do |volume_name, volume_values|
   bricks = []
+  brick_dir = "#{node['gluster']['server']['brick_mount_path']}/#{volume_name}/brick"
   # If the node is configured as a peer for the volume, create directories to use as bricks
   if volume_values['peers'].include?(node['fqdn']) || volume_values['peers'].include?(node['hostname'])
-    # Use either configured LVM volumes or default LVM volumes
-    # Configure the LV's per gluster volume
-    # Each LV is one brick
-    lvm_volume_group 'gluster' do
-      physical_volumes node['gluster']['server']['disks']
-      if volume_values.attribute?('filesystem')
-        filesystem = volume_values['filesystem']
-      else
-        Chef::Log.warn('No filesystem specified, defaulting to xfs')
-        filesystem = 'xfs'
+    if use_lvm
+      # Use either configured LVM volumes or default LVM volumes
+      # Configure the LV's per gluster volume
+      # Each LV is one brick
+      lvm_volume_group 'gluster' do
+        physical_volumes node['gluster']['server']['disks']
+        if volume_values.attribute?('filesystem')
+          filesystem = volume_values['filesystem']
+        else
+          Chef::Log.warn('No filesystem specified, defaulting to xfs')
+          filesystem = 'xfs'
+        end
+        # Even though this says volume_name, it's actually Brick Name. At the moment this method only supports one brick per volume per server
+        logical_volume volume_name do
+          size volume_values['size']
+          filesystem filesystem
+          mount_point "#{node['gluster']['server']['brick_mount_path']}/#{volume_name}"
+        end
       end
-      # Even though this says volume_name, it's actually Brick Name. At the moment this method only supports one brick per volume per server
-      logical_volume volume_name do
-        size volume_values['size']
-        filesystem filesystem
-        mount_point "#{node['gluster']['server']['brick_mount_path']}/#{volume_name}"
+    else
+      # Create the brick dir
+      # TODO: Check if the mount point exists or else the vol create would fail
+      directory brick_dir do
+        owner 'root'
+        group 'root'
+        mode '0755'
+        recursive true
+        action :create
       end
     end
-    bricks << "#{node['gluster']['server']['brick_mount_path']}/#{volume_name}/brick"
+    bricks << brick_dir
     # Save the array of bricks to the node's attributes
     node.set['gluster']['server']['volumes'][volume_name]['bricks'] = bricks
   else

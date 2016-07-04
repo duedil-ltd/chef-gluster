@@ -20,7 +20,7 @@
 
 # Server package and servicename
 case node['platform']
-when 'ubuntu'
+when 'ubuntu', 'debian'
   default['gluster']['server']['package'] = 'glusterfs-server'
   default['gluster']['server']['servicename'] = 'glusterfs-server'
 when 'redhat', 'centos'
@@ -34,9 +34,11 @@ default['gluster']['server']['enable'] = true
 # Package dependencies
 case node['platform']
 when 'ubuntu'
-  default['gluster']['server']['dependencies'] = %w(xfsprogs lvm2)
+  default['gluster']['server']['dependencies'] = %w(xfsprogs lvm2 attr)
 when 'redhat', 'centos'
-  default['gluster']['server']['dependencies'] = %w(xfsprogs lvm2)
+  default['gluster']['server']['dependencies'] = %w(xfsprogs lvm2 attr)
+when 'debian'
+  default['gluster']['server']['dependencies'] = %w(xfsprogs lvm2 attr)
 end
 
 # Default path to use for mounting bricks
