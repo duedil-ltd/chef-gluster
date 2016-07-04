@@ -28,7 +28,9 @@ node['gluster']['server']['dependencies'].each do |d|
 end
 
 # Install the server package
-package node['gluster']['server']['package']
+package node['gluster']['server']['package'] do
+  version node['gluster']['version']
+end
 
 # Make sure the service is started
 service node['gluster']['server']['servicename'] do

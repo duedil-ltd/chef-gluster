@@ -6,10 +6,13 @@ provisioner:
   name: chef_zero
 
 platforms:
-  - name: ubuntu-14.04
-  - name: ubuntu-12.04
-  - name: centos-6.5
-  - name: centos-7.1
+  # - name: ubuntu-14.04
+  # - name: ubuntu-12.04
+  # - name: centos-6.5
+  # - name: centos-7.1
+  - name: Debian8
+    driver:
+      box: debian/jessie64
 
 suites:
   - name: replicated1
@@ -21,12 +24,14 @@ suites:
         size: 10
     run_list:
       - recipe[testcookbook::set_hostname]
+      - recipe[testcookbook::setup_brick_mount]
       - recipe[gluster::server]
+      - recipe[gluster::client]
     attributes:
+      apt:
+        compile_time_update: true
       gluster:
         server:
-          disks:
-            - /dev/sdb
           brick_mount_path: "/data"
           volumes:
             gv0:
@@ -35,10 +40,12 @@ suites:
                 - "gluster1"
               replica_count: 2
               volume_type: "replicated"
-              size: "5G"
-              filesystem: "xfs"
-              disks:
-                - sdb
+        client:
+          volumes:
+            gv0:
+              server: gluster1
+              backup_server: gluster2
+              mount_point: /gv0
 
   - name: replicated2
     driver:
@@ -51,7 +58,15 @@ suites:
       - recipe[testcookbook::set_hostname]
       - recipe[gluster::server]
     attributes:
+      apt:
+        compile_time_update: true
       gluster:
+        client:
+          volumes:
+            gv0:
+              server: gluster1
+              backup_server: gluster2
+              mount_point: /gv0
         server:
           disks:
             - /dev/sdb
@@ -66,363 +81,362 @@ suites:
               lvm_volumes: 
                 - sdb
               size: "5G"
-              filesystem: "xfs"
+              filesystem: "ext4"
               disks:
                 - sdb
 
-  - name: distributed1
-    driver:
-      ipaddress: 192.168.10.10
-      vagrantfile_erb: test/integration/Vagrantfile.erb
-      vm_hostname: gluster1
-      additional_disk: 
-        size: 10
-    run_list:
-      - recipe[testcookbook::set_hostname]
-      - recipe[gluster::server]
-    attributes:
-      gluster:
-        server:
-          disks:
-            - /dev/sdb
-          brick_mount_path: "/data"
-          volumes:
-            gv0:
-              peers: 
-                - "gluster2"
-                - "gluster1"
-              replica_count: 2
-              volume_type: "distributed"
-              lvm_volumes: 
-                - sdb
-              size: "5G"
-              filesystem: "xfs"
-              disks:
-                - sdb
+  # - name: distributed1
+  #   driver:
+  #     ipaddress: 192.168.10.10
+  #     vagrantfile_erb: test/integration/Vagrantfile.erb
+  #     vm_hostname: gluster1
+  #     additional_disk: 
+  #       size: 10
+  #   run_list:
+  #     - recipe[testcookbook::set_hostname]
+  #     - recipe[gluster::server]
+  #   attributes:
+  #     gluster:
+  #       server:
+  #         disks:
+  #           - /dev/sdb
+  #         brick_mount_path: "/data"
+  #         volumes:
+  #           gv0:
+  #             peers: 
+  #               - "gluster2"
+  #               - "gluster1"
+  #             replica_count: 2
+  #             volume_type: "distributed"
+  #             lvm_volumes: 
+  #               - sdb
+  #             size: "5G"
+  #             filesystem: "xfs"
+  #             disks:
+  #               - sdb
 
-  - name: distributed2
-    driver:
-      ipaddress: 192.168.10.20
-      vagrantfile_erb: test/integration/Vagrantfile.erb
-      vm_hostname: gluster2
-      additional_disk: 
-        size: 10
-    run_list:
-      - recipe[testcookbook::set_hostname]
-      - recipe[gluster::server]
-    attributes:
-      gluster:
-        server:
-          disks:
-            - /dev/sdb
-          brick_mount_path: "/data"
-          volumes:
-            gv0:
-              peers: 
-                - "gluster2"
-                - "gluster1"
-              replica_count: 2
-              volume_type: "distributed"
-              lvm_volumes: 
-                - sdb
-              size: "5G"
-              filesystem: "xfs"
-              disks:
-                - sdb
+  # - name: distributed2
+  #   driver:
+  #     ipaddress: 192.168.10.20
+  #     vagrantfile_erb: test/integration/Vagrantfile.erb
+  #     vm_hostname: gluster2
+  #     additional_disk: 
+  #       size: 10
+  #   run_list:
+  #     - recipe[testcookbook::set_hostname]
+  #     - recipe[gluster::server]
+  #   attributes:
+  #     gluster:
+  #       server:
+  #         disks:
+  #           - /dev/sdb
+  #         brick_mount_path: "/data"
+  #         volumes:
+  #           gv0:
+  #             peers: 
+  #               - "gluster2"
+  #               - "gluster1"
+  #             replica_count: 2
+  #             volume_type: "distributed"
+  #             lvm_volumes: 
+  #               - sdb
+  #             size: "5G"
+  #             filesystem: "xfs"
+  #             disks:
+  #               - sdb
 
-  - name: distributed-repl1
-    driver:
-      ipaddress: 192.168.10.10
-      vagrantfile_erb: test/integration/Vagrantfile.erb
-      vm_hostname: gluster1
-      additional_disk: 
-        size: 10
-    run_list:
-      - recipe[testcookbook::set_hostname]
-      - recipe[gluster::server]
-    attributes:
-      gluster:
-        server:
-          brick_mount_path: "/data"
-          disks:
-            - /dev/sdb
-          volumes:
-            gv0:
-              peers: 
-                - "gluster4"
-                - "gluster3"
-                - "gluster2"
-                - "gluster1"
-              replica_count: 2
-              volume_type: "distributed-replicated"
-              size: "5 G"
+  # - name: distributed-repl1
+  #   driver:
+  #     ipaddress: 192.168.10.10
+  #     vagrantfile_erb: test/integration/Vagrantfile.erb
+  #     vm_hostname: gluster1
+  #     additional_disk: 
+  #       size: 10
+  #   run_list:
+  #     - recipe[testcookbook::set_hostname]
+  #     - recipe[gluster::server]
+  #   attributes:
+  #     gluster:
+  #       server:
+  #         brick_mount_path: "/data"
+  #         disks:
+  #           - /dev/sdb
+  #         volumes:
+  #           gv0:
+  #             peers: 
+  #               - "gluster4"
+  #               - "gluster3"
+  #               - "gluster2"
+  #               - "gluster1"
+  #             replica_count: 2
+  #             volume_type: "distributed-replicated"
+  #             size: "5 G"
 
-  - name: distributed-repl2
-    driver:
-      ipaddress: 192.168.10.20
-      vagrantfile_erb: test/integration/Vagrantfile.erb
-      vm_hostname: gluster2
-      additional_disk: 
-        size: 10
-    run_list:
-      - recipe[testcookbook::set_hostname]
-      - recipe[gluster::server]
-    attributes:
-      gluster:
-        server:
-          disks:
-            - /dev/sdb
-          brick_mount_path: "/data"
-          volumes:
-            gv0:
-              peers: 
-                - "gluster4"
-                - "gluster3"
-                - "gluster2"
-                - "gluster1"
-              replica_count: 2
-              volume_type: "distributed-replicated"
-              size: "5G"
+  # - name: distributed-repl2
+  #   driver:
+  #     ipaddress: 192.168.10.20
+  #     vagrantfile_erb: test/integration/Vagrantfile.erb
+  #     vm_hostname: gluster2
+  #     additional_disk: 
+  #       size: 10
+  #   run_list:
+  #     - recipe[testcookbook::set_hostname]
+  #     - recipe[gluster::server]
+  #   attributes:
+  #     gluster:
+  #       server:
+  #         disks:
+  #           - /dev/sdb
+  #         brick_mount_path: "/data"
+  #         volumes:
+  #           gv0:
+  #             peers: 
+  #               - "gluster4"
+  #               - "gluster3"
+  #               - "gluster2"
+  #               - "gluster1"
+  #             replica_count: 2
+  #             volume_type: "distributed-replicated"
+  #             size: "5G"
 
-  - name: distributed-repl3
-    driver:
-      ipaddress: 192.168.10.30
-      vagrantfile_erb: test/integration/Vagrantfile.erb
-      vm_hostname: gluster3
-      additional_disk: 
-        size: 10
-    run_list:
-      - recipe[testcookbook::set_hostname]
-      - recipe[gluster::server]
-    attributes:
-      gluster:
-        server:
-          brick_mount_path: "/data"
-          disks:
-            - /dev/sdb
-          volumes:
-            gv0:
-              peers: 
-                - "gluster4"
-                - "gluster3"
-                - "gluster2"
-                - "gluster1"
-              replica_count: 2
-              volume_type: "distributed-replicated"
-              size: "5G"
+  # - name: distributed-repl3
+  #   driver:
+  #     ipaddress: 192.168.10.30
+  #     vagrantfile_erb: test/integration/Vagrantfile.erb
+  #     vm_hostname: gluster3
+  #     additional_disk: 
+  #       size: 10
+  #   run_list:
+  #     - recipe[testcookbook::set_hostname]
+  #     - recipe[gluster::server]
+  #   attributes:
+  #     gluster:
+  #       server:
+  #         brick_mount_path: "/data"
+  #         disks:
+  #           - /dev/sdb
+  #         volumes:
+  #           gv0:
+  #             peers: 
+  #               - "gluster4"
+  #               - "gluster3"
+  #               - "gluster2"
+  #               - "gluster1"
+  #             replica_count: 2
+  #             volume_type: "distributed-replicated"
+  #             size: "5G"
 
-  - name: distributed-repl4
-    driver:
-      ipaddress: 192.168.10.40
-      vagrantfile_erb: test/integration/Vagrantfile.erb
-      vm_hostname: gluster4
-      additional_disk: 
-        size: 10
-    run_list:
-      - recipe[testcookbook::set_hostname]
-      - recipe[gluster::server]
-    attributes:
-      gluster:
-        server:
-          disks:
-            - /dev/sdb
-          brick_mount_path: "/data"
-          volumes:
-            gv0:
-              peers: 
-                - "gluster4"
-                - "gluster3"
-                - "gluster2"
-                - "gluster1"
-              replica_count: 2
-              volume_type: "distributed-replicated"
-              size: "5G"
+  # - name: distributed-repl4
+  #   driver:
+  #     ipaddress: 192.168.10.40
+  #     vagrantfile_erb: test/integration/Vagrantfile.erb
+  #     vm_hostname: gluster4
+  #     additional_disk: 
+  #       size: 10
+  #   run_list:
+  #     - recipe[testcookbook::set_hostname]
+  #     - recipe[gluster::server]
+  #   attributes:
+  #     gluster:
+  #       server:
+  #         disks:
+  #           - /dev/sdb
+  #         brick_mount_path: "/data"
+  #         volumes:
+  #           gv0:
+  #             peers: 
+  #               - "gluster4"
+  #               - "gluster3"
+  #               - "gluster2"
+  #               - "gluster1"
+  #             replica_count: 2
+  #             volume_type: "distributed-replicated"
+  #             size: "5G"
 
-  - name: striped1
-    driver:
-      ipaddress: 192.168.10.10
-      vagrantfile_erb: test/integration/Vagrantfile.erb
-      vm_hostname: gluster1
-      additional_disk: 
-        size: 10
-    run_list:
-      - recipe[testcookbook::set_hostname]
-      - recipe[gluster::server]
-    attributes:
-      gluster:
-        server:
-          brick_mount_path: "/data"
-          disks:
-            - /dev/sdb
-          volumes:
-            gv0:
-              peers: 
-                - "gluster2"
-                - "gluster1"
-              replica_count: 2
-              volume_type: "striped"
-              lvm_volumes: 
-                - sdb
-              size: "5G"
-              filesystem: "xfs"
-              disks:
-                - sdb
+  # - name: striped1
+  #   driver:
+  #     ipaddress: 192.168.10.10
+  #     vagrantfile_erb: test/integration/Vagrantfile.erb
+  #     vm_hostname: gluster1
+  #     additional_disk: 
+  #       size: 10
+  #   run_list:
+  #     - recipe[testcookbook::set_hostname]
+  #     - recipe[gluster::server]
+  #   attributes:
+  #     gluster:
+  #       server:
+  #         brick_mount_path: "/data"
+  #         disks:
+  #           - /dev/sdb
+  #         volumes:
+  #           gv0:
+  #             peers: 
+  #               - "gluster2"
+  #               - "gluster1"
+  #             replica_count: 2
+  #             volume_type: "striped"
+  #             lvm_volumes: 
+  #               - sdb
+  #             size: "5G"
+  #             filesystem: "xfs"
+  #             disks:
+  #               - sdb
 
-  - name: striped2
-    driver:
-      ipaddress: 192.168.10.20
-      vagrantfile_erb: test/integration/Vagrantfile.erb
-      vm_hostname: gluster2
-      additional_disk: 
-        size: 10
-    run_list:
-      - recipe[testcookbook::set_hostname]
-      - recipe[gluster::server]
-    attributes:
-      gluster:
-        server:
-          disks:
-            - /dev/sdb
-          brick_mount_path: "/data"
-          volumes:
-            gv0:
-              peers: 
-                - "gluster2"
-                - "gluster1"
-              replica_count: 2
-              volume_type: "striped"
-              lvm_volumes: 
-                - sdb
-              size: "5G"
-              filesystem: "xfs"
-              disks:
-                - sdb
+  # - name: striped2
+  #   driver:
+  #     ipaddress: 192.168.10.20
+  #     vagrantfile_erb: test/integration/Vagrantfile.erb
+  #     vm_hostname: gluster2
+  #     additional_disk: 
+  #       size: 10
+  #   run_list:
+  #     - recipe[testcookbook::set_hostname]
+  #     - recipe[gluster::server]
+  #   attributes:
+  #     gluster:
+  #       server:
+  #         disks:
+  #           - /dev/sdb
+  #         brick_mount_path: "/data"
+  #         volumes:
+  #           gv0:
+  #             peers: 
+  #               - "gluster2"
+  #               - "gluster1"
+  #             replica_count: 2
+  #             volume_type: "striped"
+  #             lvm_volumes: 
+  #               - sdb
+  #             size: "5G"
+  #             filesystem: "xfs"
+  #             disks:
+  #               - sdb
 
-  - name: distributed-striped1
-    driver:
-      ipaddress: 192.168.10.10
-      vagrantfile_erb: test/integration/Vagrantfile.erb
-      vm_hostname: gluster1
-      additional_disk: 
-        size: 10
-    run_list:
-      - recipe[testcookbook::set_hostname]
-      - recipe[gluster::server]
-    attributes:
-      gluster:
-        server:
-          brick_mount_path: "/data"
-          disks:
-            - /dev/sdb
-          volumes:
-            gv0:
-              peers: 
-                - "gluster4"
-                - "gluster3"
-                - "gluster2"
-                - "gluster1"
-              replica_count: 2
-              volume_type: "distributed-striped"
-              lvm_volumes: 
-                - sdb
-              size: "5G"
-              filesystem: "xfs"
-              disks:
-                - sdb
+  # - name: distributed-striped1
+  #   driver:
+  #     ipaddress: 192.168.10.10
+  #     vagrantfile_erb: test/integration/Vagrantfile.erb
+  #     vm_hostname: gluster1
+  #     additional_disk: 
+  #       size: 10
+  #   run_list:
+  #     - recipe[testcookbook::set_hostname]
+  #     - recipe[gluster::server]
+  #   attributes:
+  #     gluster:
+  #       server:
+  #         brick_mount_path: "/data"
+  #         disks:
+  #           - /dev/sdb
+  #         volumes:
+  #           gv0:
+  #             peers: 
+  #               - "gluster4"
+  #               - "gluster3"
+  #               - "gluster2"
+  #               - "gluster1"
+  #             replica_count: 2
+  #             volume_type: "distributed-striped"
+  #             lvm_volumes: 
+  #               - sdb
+  #             size: "5G"
+  #             filesystem: "xfs"
+  #             disks:
+  #               - sdb
 
-  - name: distributed-striped2
-    driver:
-      ipaddress: 192.168.10.20
-      vagrantfile_erb: test/integration/Vagrantfile.erb
-      vm_hostname: gluster2
-      additional_disk: 
-        size: 10
-    run_list:
-      - recipe[testcookbook::set_hostname]
-      - recipe[gluster::server]
-    attributes:
-      gluster:
-        server:
-          brick_mount_path: "/data"
-          disks:
-            - /dev/sdb
-          volumes:
-            gv0:
-              peers: 
-                - "gluster4"
-                - "gluster3"
-                - "gluster2"
-                - "gluster1"
-              replica_count: 2
-              volume_type: "distributed-striped"
-              lvm_volumes: 
-                - sdb
-              size: "5G"
-              filesystem: "xfs"
-              disks:
-                - sdb
+  # - name: distributed-striped2
+  #   driver:
+  #     ipaddress: 192.168.10.20
+  #     vagrantfile_erb: test/integration/Vagrantfile.erb
+  #     vm_hostname: gluster2
+  #     additional_disk: 
+  #       size: 10
+  #   run_list:
+  #     - recipe[testcookbook::set_hostname]
+  #     - recipe[gluster::server]
+  #   attributes:
+  #     gluster:
+  #       server:
+  #         brick_mount_path: "/data"
+  #         disks:
+  #           - /dev/sdb
+  #         volumes:
+  #           gv0:
+  #             peers: 
+  #               - "gluster4"
+  #               - "gluster3"
+  #               - "gluster2"
+  #               - "gluster1"
+  #             replica_count: 2
+  #             volume_type: "distributed-striped"
+  #             lvm_volumes: 
+  #               - sdb
+  #             size: "5G"
+  #             filesystem: "xfs"
+  #             disks:
+  #               - sdb
 
-  - name: distributed-striped3
-    driver:
-      ipaddress: 192.168.10.30
-      vagrantfile_erb: test/integration/Vagrantfile.erb
-      vm_hostname: gluster3
-      additional_disk: 
-        size: 10
-    run_list:
-      - recipe[testcookbook::set_hostname]
-      - recipe[gluster::server]
-    attributes:
-      gluster:
-        server:
-          brick_mount_path: "/data"
-          disks:
-            - /dev/sdb
-          volumes:
-            gv0:
-              peers: 
-                - "gluster4"
-                - "gluster3"
-                - "gluster2"
-                - "gluster1"
-              replica_count: 2
-              volume_type: "distributed-striped"
-              lvm_volumes: 
-                - sdb
-              size: "5G"
-              filesystem: "xfs"
-              disks:
-                - sdb
+  # - name: distributed-striped3
+  #   driver:
+  #     ipaddress: 192.168.10.30
+  #     vagrantfile_erb: test/integration/Vagrantfile.erb
+  #     vm_hostname: gluster3
+  #     additional_disk: 
+  #       size: 10
+  #   run_list:
+  #     - recipe[testcookbook::set_hostname]
+  #     - recipe[gluster::server]
+  #   attributes:
+  #     gluster:
+  #       server:
+  #         brick_mount_path: "/data"
+  #         disks:
+  #           - /dev/sdb
+  #         volumes:
+  #           gv0:
+  #             peers: 
+  #               - "gluster4"
+  #               - "gluster3"
+  #               - "gluster2"
+  #               - "gluster1"
+  #             replica_count: 2
+  #             volume_type: "distributed-striped"
+  #             lvm_volumes: 
+  #               - sdb
+  #             size: "5G"
+  #             filesystem: "xfs"
+  #             disks:
+  #               - sdb
 
-  - name: distributed-striped4
-    driver:
-      ipaddress: 192.168.10.40
-      vagrantfile_erb: test/integration/Vagrantfile.erb
-      vm_hostname: gluster4
-      additional_disk: 
-        size: 10
-    run_list:
-      - recipe[testcookbook::set_hostname]
-      - recipe[gluster::server]
-    attributes:
-      gluster:
-        server:
-          brick_mount_path: "/data"
-          disks:
-            - /dev/sdb
-          volumes:
-            gv0:
-              peers: 
-                - "gluster4"
-                - "gluster3"
-                - "gluster2"
-                - "gluster1"
-              replica_count: 2
-              volume_type: "distributed-striped"
-              lvm_volumes: 
-                - sdb
-              size: "5G"
-              filesystem: "xfs"
-              disks:
-                - sdb
-
+  # - name: distributed-striped4
+  #   driver:
+  #     ipaddress: 192.168.10.40
+  #     vagrantfile_erb: test/integration/Vagrantfile.erb
+  #     vm_hostname: gluster4
+  #     additional_disk: 
+  #       size: 10
+  #   run_list:
+  #     - recipe[testcookbook::set_hostname]
+  #     - recipe[gluster::server]
+  #   attributes:
+  #     gluster:
+  #       server:
+  #         brick_mount_path: "/data"
+  #         disks:
+  #           - /dev/sdb
+  #         volumes:
+  #           gv0:
+  #             peers: 
+  #               - "gluster4"
+  #               - "gluster3"
+  #               - "gluster2"
+  #               - "gluster1"
+  #             replica_count: 2
+  #             volume_type: "distributed-striped"
+  #             lvm_volumes: 
+  #               - sdb
+  #             size: "5G"
+  #             filesystem: "xfs"
+  #             disks:
+  #               - sdb

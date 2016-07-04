@@ -18,18 +18,20 @@
 # limitations under the License.
 #
 
+major_version = node['gluster']['version'].split('.')[0..1].join('.')
+
 case node['platform']
 when 'debian'
   include_recipe 'apt::default'
 
   apt_repository "glusterfs-#{node['gluster']['version']}" do
-    uri "http://download.gluster.org/pub/gluster/glusterfs/#{node['gluster']['version']}/LATEST/Debian/#{node['lsb']['codename']}/apt"
+    uri "http://download.gluster.org/pub/gluster/glusterfs/#{major_version}/LATEST/Debian/#{node['lsb']['codename']}/apt"
     distribution node['lsb']['codename']
     components ['main']
-    key "http://download.gluster.org/pub/gluster/glusterfs/#{node['gluster']['version']}/LATEST/Debian/#{node['lsb']['codename']}/pubkey.gpg"
+    key "http://download.gluster.org/pub/gluster/glusterfs/LATEST/rsa.pub"
     deb_src true
     not_if do
-      File.exist?("/etc/apt/sources.list.d/glusterfs-#{node['gluster']['version']}.list")
+      File.exist?("/etc/apt/sources.list.d/glusterfs-#{major_version}.list")
     end
   end
 when 'ubuntu'

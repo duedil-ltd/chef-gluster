@@ -21,4 +21,6 @@
 include_recipe 'gluster::repository' unless node['gluster']['repo'] == 'private'
 
 # Install the client package
-package node['gluster']['client']['package']
+package node['gluster']['client']['package'] do
+	version node['gluster']['version']
+end
