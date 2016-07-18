@@ -25,7 +25,7 @@ when 'debian'
   include_recipe 'apt::default'
 
   apt_repository "glusterfs-#{node['gluster']['version']}" do
-    uri "http://download.gluster.org/pub/gluster/glusterfs/#{major_version}/LATEST/Debian/#{node['lsb']['codename']}/apt"
+    uri "http://download.gluster.org/pub/gluster/glusterfs/#{major_version}/#{major_version}.0/Debian/#{node['lsb']['codename']}/apt"
     distribution node['lsb']['codename']
     components ['main']
     key "http://download.gluster.org/pub/gluster/glusterfs/#{major_version}/#{major_version}.0/rsa.pub"
